@@ -101,8 +101,6 @@ class ClockifyClient {
     /// - Returns: The created time entry with the running timer
     /// - Throws: API errors if the request fails
     func startTimer(description: String? = nil, projectId: String? = nil) async throws -> TimeEntry {
-        _ = try await getCurrentUser()
-        
         guard let url = URL(string: "\(baseURL)/workspaces/\(workspaceId)/time-entries") else {
             throw ClockifyError.invalidURL
         }
