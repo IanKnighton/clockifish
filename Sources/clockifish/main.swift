@@ -24,10 +24,21 @@ struct Clockifish: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "clockifish",
         abstract: "A CLI for interacting with the Clockify API",
-        version: "1.0.0",
+        version: getVersion(),
         subcommands: [Timer.self],
         defaultSubcommand: Timer.self
     )
+    
+    /// Get the version string, either from environment variable (for builds) or git tag (for development)
+    static func getVersion() -> String {
+        // Check for embedded version (set during Homebrew build)
+        if let embeddedVersion = ProcessInfo.processInfo.environment["CLOCKIFISH_VERSION"] {
+            return embeddedVersion
+        }
+        
+        // Fallback to hardcoded version for development
+        return "1.0.0"
+    }
 }
 
 /// Timer subcommand for managing time entries
