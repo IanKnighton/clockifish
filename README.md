@@ -16,7 +16,45 @@ A Swift command-line interface (CLI) tool for interacting with the Clockify time
 - macOS 13 or later (or Linux with Swift installed)
 - A Clockify account with API access
 
+## Installation
+
+### Homebrew (Recommended)
+
+The easiest way to install clockifish is via Homebrew:
+
+```bash
+brew tap IanKnighton/homebrew-tap
+brew install clockifish
+```
+
+To upgrade to the latest version:
+```bash
+brew upgrade clockifish
+```
+
+### Manual Installation
+
+If you prefer to build from source or don't use Homebrew:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/IanKnighton/clockifish.git
+   cd clockifish
+   ```
+
+2. Build the release binary:
+   ```bash
+   swift build -c release
+   ```
+
+3. Copy the executable to your PATH:
+   ```bash
+   sudo cp .build/release/clockifish /usr/local/bin/
+   ```
+
 ## Setup
+
+Before using clockifish, you need to configure your Clockify credentials as environment variables.
 
 ### 1. Get Your Clockify Credentials
 
@@ -45,29 +83,6 @@ export CLOCKIFY_WORKSPACE_ID="your_workspace_id_here"
 Then reload your shell:
 ```bash
 source ~/.zshrc  # or ~/.bashrc
-```
-
-### 3. Build the Application
-
-Clone the repository and build:
-
-```bash
-git clone https://github.com/IanKnighton/clockifish.git
-cd clockifish
-swift build -c release
-```
-
-### 4. Install (Optional)
-
-Copy the executable to your PATH:
-
-```bash
-cp .build/release/clockifish /usr/local/bin/
-```
-
-Or run directly from the build directory:
-```bash
-.build/release/clockifish
 ```
 
 ## Usage
