@@ -225,7 +225,9 @@ extension Report {
         // If Sunday (1), go back 6 days. If Monday (2), go back 0 days, etc.
         let daysToSubtract = weekday == 1 ? 6 : weekday - 2
         
-        let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: now)!
+        guard let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: now) else {
+            return calendar.startOfDay(for: now)
+        }
         return calendar.startOfDay(for: startOfWeek)
     }
     
@@ -234,8 +236,10 @@ extension Report {
         let calendar = Calendar.current
         let startOfWeek = getStartOfWeek()
         
-        // Add 7 days to get to the start of next Monday, then subtract 1 second
-        let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek)!
+        // Add 7 days to get to the start of next Monday
+        guard let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
+            return calendar.date(byAdding: .day, value: 7, to: startOfWeek) ?? startOfWeek
+        }
         return endOfWeek
     }
     
@@ -244,7 +248,7 @@ extension Report {
         let calendar = Calendar.current
         let now = Date()
         let components = calendar.dateComponents([.year, .month], from: now)
-        return calendar.date(from: components)!
+        return calendar.date(from: components) ?? calendar.startOfDay(for: now)
     }
     
     /// Get the end of the current month
@@ -253,8 +257,22 @@ extension Report {
         let startOfMonth = getStartOfMonth()
         
         // Add 1 month to get start of next month
-        let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth)!
+        guard let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) else {
+            return startOfMonth
+        }
         return endOfMonth
+    }
+    
+    /// Format a date range end for display (subtracts 1 second from the end date)
+    static func formatEndDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        
+        guard let adjustedDate = calendar.date(byAdding: .second, value: -1, to: date) else {
+            return formatter.string(from: date)
+        }
+        return formatter.string(from: adjustedDate)
     }
     
     /// Week report subcommand
@@ -281,7 +299,7 @@ extension Report {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .short
                 
-                print("Week: \(formatter.string(from: startDate)) - \(formatter.string(from: Calendar.current.date(byAdding: .second, value: -1, to: endDate)!))")
+                print("Week: \(formatter.string(from: startDate)) - \(Report.formatEndDate(endDate))")
                 print("Total Hours: \(String(format: "%.2f", totalHours))")
             }
         }
@@ -311,7 +329,7 @@ extension Report {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .short
                 
-                print("Month: \(formatter.string(from: startDate)) - \(formatter.string(from: Calendar.current.date(byAdding: .second, value: -1, to: endDate)!))")
+                print("Month: \(formatter.string(from: startDate)) - \(Report.formatEndDate(endDate))")
                 print("Total Hours: \(String(format: "%.2f", totalHours))")
             }
         }
