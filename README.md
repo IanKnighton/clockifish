@@ -120,6 +120,18 @@ Check if a timer is running and see its details:
 clockifish timer status
 ```
 
+Get just the ID of the current timer (useful for git commits):
+```bash
+clockifish timer status id
+```
+
+This command outputs only the timer ID when a timer is running, or "no timer" with a non-zero exit code when no timer is running. This makes it perfect for git commit messages:
+```bash
+git commit -m "feat: added a thing" -m "$(clockifish timer status id)"
+```
+
+If no timer is running, the commit will fail due to the non-zero exit code.
+
 ### Help
 
 Get help for any command:

@@ -106,7 +106,8 @@ extension Timer {
     /// Check the status of the current timer
     struct Status: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Check the status of the current timer"
+            abstract: "Check the status of the current timer",
+            subcommands: [Id.self]
         )
         
         func run() async throws {
@@ -122,6 +123,24 @@ extension Timer {
                 print("Duration: \(Timer.formatDuration(from: currentTimer.timeInterval.start, to: Date()))")
             } else {
                 print("No timer is currently running")
+            }
+        }
+        
+        /// Get just the ID of the current timer
+        struct Id: AsyncParsableCommand {
+            static let configuration = CommandConfiguration(
+                abstract: "Get just the ID of the current timer"
+            )
+            
+            func run() async throws {
+                let client = try ClockifyClient()
+                
+                if let currentTimer = try await client.getCurrentTimer() {
+                    print(currentTimer.id)
+                } else {
+                    print("no timer")
+                    throw ExitCode.failure
+                }
             }
         }
     }
