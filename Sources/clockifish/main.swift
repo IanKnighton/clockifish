@@ -184,16 +184,31 @@ struct Report: AsyncParsableCommand {
     
     func run() async throws {
         // Default behavior: show both week and month reports
-        let weekReport = Week()
-        let monthReport = Month()
+        let client = try ClockifyClient()
         
         print("📊 Time Report\n")
         
+        // Week report
         print("Week (Monday - Sunday):")
-        try await weekReport.run()
+        let weekStartDate = Report.getStartOfWeek()
+        let weekEndDate = Report.getEndOfWeek()
+        let weekEntries = try await client.getTimeEntries(startDate: weekStartDate, endDate: weekEndDate)
+        let weekTotalHours = Report.calculateTotalHours(from: weekEntries)
         
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        print("Week: \(formatter.string(from: weekStartDate)) - \(Report.formatEndDate(weekEndDate))")
+        print("Total Hours: \(String(format: "%.2f", weekTotalHours))")
+        
+        // Month report
         print("\nMonth:")
-        try await monthReport.run()
+        let monthStartDate = Report.getStartOfMonth()
+        let monthEndDate = Report.getEndOfMonth()
+        let monthEntries = try await client.getTimeEntries(startDate: monthStartDate, endDate: monthEndDate)
+        let monthTotalHours = Report.calculateTotalHours(from: monthEntries)
+        
+        print("Month: \(formatter.string(from: monthStartDate)) - \(Report.formatEndDate(monthEndDate))")
+        print("Total Hours: \(String(format: "%.2f", monthTotalHours))")
     }
 }
 
