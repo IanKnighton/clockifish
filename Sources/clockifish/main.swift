@@ -25,7 +25,7 @@ struct Clockifish: AsyncParsableCommand {
         commandName: "clockifish",
         abstract: "A CLI for interacting with the Clockify API",
         version: getVersion(),
-        subcommands: [Timer.self],
+        subcommands: [Timer.self, Report.self],
         defaultSubcommand: Timer.self
     )
     
@@ -173,3 +173,166 @@ extension Timer {
         }
     }
 }
+
+/// Report subcommand for generating time reports
+struct Report: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "report",
+        abstract: "Generate time reports for the week and month",
+        subcommands: [Week.self, Month.self]
+    )
+    
+    func run() async throws {
+        // Default behavior: show both week and month reports
+        let weekReport = Week()
+        let monthReport = Month()
+        
+        print("📊 Time Report\n")
+        
+        print("Week (Monday - Sunday):")
+        try await weekReport.run()
+        
+        print("\nMonth:")
+        try await monthReport.run()
+    }
+}
+
+extension Report {
+    /// Calculate total hours from time entries
+    static func calculateTotalHours(from entries: [TimeEntry]) -> Double {
+        var totalSeconds: Double = 0
+        
+        for entry in entries {
+            guard let endDate = entry.timeInterval.end else {
+                continue
+            }
+            let duration = endDate.timeIntervalSince(entry.timeInterval.start)
+            totalSeconds += duration
+        }
+        
+        return totalSeconds / 3600.0
+    }
+    
+    /// Get the start of the current week (Monday)
+    static func getStartOfWeek() -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Get the weekday (1 = Sunday, 2 = Monday, etc.)
+        let weekday = calendar.component(.weekday, from: now)
+        
+        // Calculate days to subtract to get to Monday (weekday 2)
+        // If Sunday (1), go back 6 days. If Monday (2), go back 0 days, etc.
+        let daysToSubtract = weekday == 1 ? 6 : weekday - 2
+        
+        guard let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: now) else {
+            return calendar.startOfDay(for: now)
+        }
+        return calendar.startOfDay(for: startOfWeek)
+    }
+    
+    /// Get the end of the current week (Sunday at end of day)
+    static func getEndOfWeek() -> Date {
+        let calendar = Calendar.current
+        let startOfWeek = getStartOfWeek()
+        
+        // Add 7 days to get to the start of next Monday
+        guard let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
+            return startOfWeek
+        }
+        return endOfWeek
+    }
+    
+    /// Get the start of the current month
+    static func getStartOfMonth() -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month], from: now)
+        return calendar.date(from: components) ?? calendar.startOfDay(for: now)
+    }
+    
+    /// Get the end of the current month
+    static func getEndOfMonth() -> Date {
+        let calendar = Calendar.current
+        let startOfMonth = getStartOfMonth()
+        
+        // Add 1 month to get start of next month
+        guard let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) else {
+            return startOfMonth
+        }
+        return endOfMonth
+    }
+    
+    /// Format a date range end for display (subtracts 1 second from the end date)
+    static func formatEndDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        
+        guard let adjustedDate = calendar.date(byAdding: .second, value: -1, to: date) else {
+            return formatter.string(from: date)
+        }
+        return formatter.string(from: adjustedDate)
+    }
+    
+    /// Week report subcommand
+    struct Week: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            abstract: "Show time report for the current week (Monday - Sunday)"
+        )
+        
+        @Flag(name: .long, help: "Output just the numeric value (hours to 2 decimal places)")
+        var raw = false
+        
+        func run() async throws {
+            let client = try ClockifyClient()
+            
+            let startDate = Report.getStartOfWeek()
+            let endDate = Report.getEndOfWeek()
+            
+            let entries = try await client.getTimeEntries(startDate: startDate, endDate: endDate)
+            let totalHours = Report.calculateTotalHours(from: entries)
+            
+            if raw {
+                print(String(format: "%.2f", totalHours))
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .short
+                
+                print("Week: \(formatter.string(from: startDate)) - \(Report.formatEndDate(endDate))")
+                print("Total Hours: \(String(format: "%.2f", totalHours))")
+            }
+        }
+    }
+    
+    /// Month report subcommand
+    struct Month: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            abstract: "Show time report for the current month"
+        )
+        
+        @Flag(name: .long, help: "Output just the numeric value (hours to 2 decimal places)")
+        var raw = false
+        
+        func run() async throws {
+            let client = try ClockifyClient()
+            
+            let startDate = Report.getStartOfMonth()
+            let endDate = Report.getEndOfMonth()
+            
+            let entries = try await client.getTimeEntries(startDate: startDate, endDate: endDate)
+            let totalHours = Report.calculateTotalHours(from: entries)
+            
+            if raw {
+                print(String(format: "%.2f", totalHours))
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .short
+                
+                print("Month: \(formatter.string(from: startDate)) - \(Report.formatEndDate(endDate))")
+                print("Total Hours: \(String(format: "%.2f", totalHours))")
+            }
+        }
+    }
+}
+

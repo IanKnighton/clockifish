@@ -7,6 +7,7 @@ A Swift command-line interface (CLI) tool for interacting with the Clockify time
 - 🚀 Start timers with optional descriptions and project associations
 - ⏹️ Stop currently running timers
 - 📊 Check the status of your current timer
+- 📈 Generate time reports for the current week and month
 - 🔐 Secure API key management via environment variables
 - 📝 Well-documented and easy to test locally
 
@@ -132,6 +133,38 @@ git commit -m "feat: added a thing" -m "$(clockifish timer status id)"
 
 If no timer is running, the commit will fail due to the non-zero exit code.
 
+### Generate Time Reports
+
+Get a combined report showing hours for both the current week and month:
+```bash
+clockifish report
+```
+
+Get just the weekly report (Monday - Sunday):
+```bash
+clockifish report week
+```
+
+Get just the monthly report:
+```bash
+clockifish report month
+```
+
+Use the `--raw` flag to get just the numeric value (useful for scripting):
+```bash
+clockifish report week --raw
+# Output: 42.50
+
+clockifish report month --raw
+# Output: 168.75
+```
+
+Example usage in scripts:
+```bash
+WEEKLY_HOURS=$(clockifish report week --raw)
+echo "You've logged $WEEKLY_HOURS hours this week"
+```
+
 ### Help
 
 Get help for any command:
@@ -139,6 +172,7 @@ Get help for any command:
 clockifish --help
 clockifish timer --help
 clockifish timer start --help
+clockifish report --help
 ```
 
 ## Testing Locally
@@ -157,6 +191,8 @@ swift build
 .build/debug/clockifish timer start -d "Test timer"
 .build/debug/clockifish timer status
 .build/debug/clockifish timer stop
+.build/debug/clockifish report
+.build/debug/clockifish report week --raw
 ```
 
 ### 3. Verify in Clockify
@@ -194,7 +230,7 @@ swift test
 
 The code is fully documented with Swift DocC-style comments. Key components:
 
-- **`main.swift`**: Defines the CLI structure using Swift Argument Parser
+- **`main.swift`**: Defines the CLI structure using Swift Argument Parser, including Timer and Report commands
 - **`ClockifyClient.swift`**: Handles all API communication with Clockify
 - **Environment Variables**: All configuration is done via environment variables for security
 
