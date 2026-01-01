@@ -238,7 +238,7 @@ extension Report {
         
         // Add 7 days to get to the start of next Monday
         guard let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
-            return calendar.date(byAdding: .day, value: 7, to: startOfWeek) ?? startOfWeek
+            return startOfWeek
         }
         return endOfWeek
     }
