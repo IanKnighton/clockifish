@@ -212,6 +212,44 @@ class ClockifyClient {
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(TimeEntry.self, from: data)
     }
+    
+    /// Get time entries for a user within a date range
+    ///
+    /// - Parameters:
+    ///   - startDate: Start date of the range
+    ///   - endDate: End date of the range
+    /// - Returns: Array of time entries within the date range
+    /// - Throws: API errors if the request fails
+    func getTimeEntries(startDate: Date, endDate: Date) async throws -> [TimeEntry] {
+        let user = try await getCurrentUser()
+        
+        let formatter = ISO8601DateFormatter()
+        let startString = formatter.string(from: startDate)
+        let endString = formatter.string(from: endDate)
+        
+        guard let url = URL(string: "\(baseURL)/workspaces/\(workspaceId)/user/\(user.id)/time-entries?start=\(startString)&end=\(endString)") else {
+            throw ClockifyError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ClockifyError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw ClockifyError.apiError(statusCode: httpResponse.statusCode, message: errorMessage)
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([TimeEntry].self, from: data)
+    }
 }
 
 // MARK: - Data Models
