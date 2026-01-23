@@ -7,7 +7,7 @@ A Swift command-line interface (CLI) tool for interacting with the Clockify time
 - 🚀 Start timers with optional descriptions and project associations
 - ⏹️ Stop currently running timers
 - 📊 Check the status of your current timer
-- 📈 Generate time reports for the current week and month
+- 📈 Generate time reports for the current week and month, or view a weekly breakdown of the last four weeks
 - 🔐 Secure API key management via environment variables
 - 📝 Well-documented and easy to test locally
 
@@ -138,6 +138,11 @@ If no timer is running, the commit will fail due to the non-zero exit code.
 Get a combined report showing hours for both the current week and month:
 ```bash
 clockifish report
+```
+
+Get a weekly breakdown of the last four weeks:
+```bash
+clockifish report --weekly
 ```
 
 Get just the weekly report (Monday - Sunday):
