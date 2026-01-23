@@ -182,33 +182,60 @@ struct Report: AsyncParsableCommand {
         subcommands: [Week.self, Month.self]
     )
     
+    @Flag(name: .long, help: "Show time reports for the last four weeks")
+    var weekly = false
+    
     func run() async throws {
-        // Default behavior: show both week and month reports
         let client = try ClockifyClient()
         
-        print("📊 Time Report\n")
-        
-        // Week report
-        print("Week (Monday - Sunday):")
-        let weekStartDate = Report.getStartOfWeek()
-        let weekEndDate = Report.getEndOfWeek()
-        let weekEntries = try await client.getTimeEntries(startDate: weekStartDate, endDate: weekEndDate)
-        let weekTotalHours = Report.calculateTotalHours(from: weekEntries)
-        
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        print("Week: \(formatter.string(from: weekStartDate)) - \(Report.formatEndDate(weekEndDate))")
-        print("Total Hours: \(String(format: "%.2f", weekTotalHours))")
-        
-        // Month report
-        print("\nMonth:")
-        let monthStartDate = Report.getStartOfMonth()
-        let monthEndDate = Report.getEndOfMonth()
-        let monthEntries = try await client.getTimeEntries(startDate: monthStartDate, endDate: monthEndDate)
-        let monthTotalHours = Report.calculateTotalHours(from: monthEntries)
-        
-        print("Month: \(formatter.string(from: monthStartDate)) - \(Report.formatEndDate(monthEndDate))")
-        print("Total Hours: \(String(format: "%.2f", monthTotalHours))")
+        if weekly {
+            // Show last four weeks of reports
+            print("📊 Weekly Time Report\n")
+            
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            
+            // Get the last 4 weeks
+            for weekOffset in (0..<4).reversed() {
+                let startDate = Report.getStartOfWeek(weeksAgo: weekOffset)
+                let endDate = Report.getEndOfWeek(from: startDate)
+                
+                let entries = try await client.getTimeEntries(startDate: startDate, endDate: endDate)
+                let totalHours = Report.calculateTotalHours(from: entries)
+                
+                print("Week: \(formatter.string(from: startDate)) - \(Report.formatEndDate(endDate))")
+                print("Total Hours: \(String(format: "%.2f", totalHours))")
+                
+                if weekOffset > 0 {
+                    print()
+                }
+            }
+        } else {
+            // Default behavior: show both week and month reports
+            print("📊 Time Report\n")
+            
+            // Week report
+            print("Week (Monday - Sunday):")
+            let weekStartDate = Report.getStartOfWeek()
+            let weekEndDate = Report.getEndOfWeek()
+            let weekEntries = try await client.getTimeEntries(startDate: weekStartDate, endDate: weekEndDate)
+            let weekTotalHours = Report.calculateTotalHours(from: weekEntries)
+            
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            print("Week: \(formatter.string(from: weekStartDate)) - \(Report.formatEndDate(weekEndDate))")
+            print("Total Hours: \(String(format: "%.2f", weekTotalHours))")
+            
+            // Month report
+            print("\nMonth:")
+            let monthStartDate = Report.getStartOfMonth()
+            let monthEndDate = Report.getEndOfMonth()
+            let monthEntries = try await client.getTimeEntries(startDate: monthStartDate, endDate: monthEndDate)
+            let monthTotalHours = Report.calculateTotalHours(from: monthEntries)
+            
+            print("Month: \(formatter.string(from: monthStartDate)) - \(Report.formatEndDate(monthEndDate))")
+            print("Total Hours: \(String(format: "%.2f", monthTotalHours))")
+        }
     }
 }
 
@@ -230,6 +257,11 @@ extension Report {
     
     /// Get the start of the current week (Monday)
     static func getStartOfWeek() -> Date {
+        return getStartOfWeek(weeksAgo: 0)
+    }
+    
+    /// Get the start of a week N weeks ago (Monday)
+    static func getStartOfWeek(weeksAgo: Int) -> Date {
         let calendar = Calendar.current
         let now = Date()
         
@@ -240,16 +272,26 @@ extension Report {
         // If Sunday (1), go back 6 days. If Monday (2), go back 0 days, etc.
         let daysToSubtract = weekday == 1 ? 6 : weekday - 2
         
-        guard let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: now) else {
+        guard let startOfCurrentWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: now) else {
             return calendar.startOfDay(for: now)
         }
+        
+        // Go back by the specified number of weeks
+        guard let startOfWeek = calendar.date(byAdding: .weekOfYear, value: -weeksAgo, to: startOfCurrentWeek) else {
+            return calendar.startOfDay(for: startOfCurrentWeek)
+        }
+        
         return calendar.startOfDay(for: startOfWeek)
     }
     
     /// Get the end of the current week (Sunday at end of day)
     static func getEndOfWeek() -> Date {
+        return getEndOfWeek(from: getStartOfWeek())
+    }
+    
+    /// Get the end of the week (Sunday at end of day) from a given start date
+    static func getEndOfWeek(from startOfWeek: Date) -> Date {
         let calendar = Calendar.current
-        let startOfWeek = getStartOfWeek()
         
         // Add 7 days to get to the start of next Monday
         guard let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
