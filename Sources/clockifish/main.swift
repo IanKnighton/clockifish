@@ -188,12 +188,12 @@ struct Report: AsyncParsableCommand {
     func run() async throws {
         let client = try ClockifyClient()
         
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        
         if weekly {
             // Show last four weeks of reports
             print("📊 Weekly Time Report\n")
-            
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
             
             // Get the last 4 weeks
             for weekOffset in (0..<4).reversed() {
@@ -221,8 +221,6 @@ struct Report: AsyncParsableCommand {
             let weekEntries = try await client.getTimeEntries(startDate: weekStartDate, endDate: weekEndDate)
             let weekTotalHours = Report.calculateTotalHours(from: weekEntries)
             
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
             print("Week: \(formatter.string(from: weekStartDate)) - \(Report.formatEndDate(weekEndDate))")
             print("Total Hours: \(String(format: "%.2f", weekTotalHours))")
             
@@ -293,7 +291,7 @@ extension Report {
     static func getEndOfWeek(from startOfWeek: Date) -> Date {
         let calendar = Calendar.current
         
-        // Add 7 days to get to the start of next Monday
+        // Add 7 days to get to the start of next Monday (exclusive end for API)
         guard let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) else {
             return startOfWeek
         }
